@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - mnemonic
-      - alexei/ci-pipeline
 
 jobs:
   build-and-publish:
