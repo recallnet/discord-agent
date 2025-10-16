@@ -109,8 +109,23 @@ export class MessageManager {
             return;
         }
 
-        // Check for mentions-only mode setting
+        const userId = message.author.id as UUID;
+        const userName = message.author.username;
+        const name = message.author.displayName;
+        const channelId = message.channel.id;
+        const channelName = 'name' in message.channel ? message.channel.name : 'DM';
+        
+        // Check if this is a ticket channel - ticket channels have special behavior
+        const isTicketChannel = channelName.toLowerCase().includes('ticket');
+        
+        // Only respond in the configured channel or in ticket channels
+        if (channelId !== this.discordClient.channelId && !isTicketChannel) {
+            return;
+        }
+
+        // Check for mentions-only mode setting (ticket channels are exempt from this restriction)
         if (
+            !isTicketChannel &&
             this.runtime.character.clientConfig?.discord
                 ?.shouldRespondOnlyToMentions
         ) {
@@ -124,18 +139,6 @@ export class MessageManager {
                 ?.shouldIgnoreDirectMessages &&
             message.channel.type === ChannelType.DM
         ) {
-            return;
-        }
-
-        const userId = message.author.id as UUID;
-        const userName = message.author.username;
-        const name = message.author.displayName;
-        const channelId = message.channel.id;
-        const channelName = 'name' in message.channel ? message.channel.name : 'DM';
-        
-        // Only respond in the configured channel or in ticket channels
-        const isTicketChannel = channelName.toLowerCase().includes('ticket');
-        if (channelId !== this.discordClient.channelId && !isTicketChannel) {
             return;
         }
         const isDirectlyMentioned = this._isMessageForMe(message);
