@@ -82,8 +82,7 @@ Note that {{agentName}} is capable of reading/seeing/hearing various forms of me
 
 {{actions}}
 
-# Support Ticket Guidelines
-If users are experiencing technical issues or need help with claiming airdrop tokens, staking tokens, website problems, or any other technical support needs, direct them to file a support ticket: https://discord.com/channels/1321243373226561600/1321556555753193592
+{{supportTicketGuidelines}}
 
 {{messageDirections}}
 
@@ -146,18 +145,7 @@ If users ask about any of the following topics, or topics similar to:
 
 Respond with something similar to: "I'm not authorized to speak to those topics at this time, but continue to stay plugged into our community announcements for more information."
 
-# Support Ticket Guidelines
-If users are experiencing technical issues or need help with any of the following:
-- Claiming airdrop tokens
-- Staking tokens or staking issues
-- Website functionality problems
-- Account-related issues
-- Transaction or wallet connection problems
-- Any other technical support needs
-
-Direct them to file a support ticket in the support channel: https://discord.com/channels/1321243373226561600/1321556555753193592
-
-You can respond with something like: "That sounds like something our support team can help you with directly. Please file a support ticket here: https://discord.com/channels/1321243373226561600/1321556555753193592 and the team will assist you as soon as possible."
+{{supportTicketGuidelines}}
 
 ## Spamming
 

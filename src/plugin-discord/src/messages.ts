@@ -131,7 +131,11 @@ export class MessageManager {
         const userName = message.author.username;
         const name = message.author.displayName;
         const channelId = message.channel.id;
-        if (channelId !== this.discordClient.channelId) {
+        const channelName = 'name' in message.channel ? message.channel.name : 'DM';
+        
+        // Only respond in the configured channel or in ticket channels
+        const isTicketChannel = channelName.toLowerCase().includes('ticket');
+        if (channelId !== this.discordClient.channelId && !isTicketChannel) {
             return;
         }
         const isDirectlyMentioned = this._isMessageForMe(message);
@@ -365,12 +369,52 @@ export class MessageManager {
                 }
             }
 
+            // Conditionally set support ticket guidelines based on channel type
+            const supportTicketGuidelines = isTicketChannel
+                ? `# Current Context
+You are currently in a support ticket channel (${channelName}). The user has already created a ticket, so provide direct assistance rather than directing them to create another ticket.
+
+# Troubleshooting Support for Common Issues
+When helping users with technical issues (especially claiming airdrops, staking tokens, wallet connections, or site functionality):
+
+1. First, ask the user to share more information about their specific issue. Request screenshots if helpful.
+
+2. Provide these common troubleshooting steps that resolve most issues:
+   - **Clear all site data and refresh the page**
+   - **Disconnect all networks in their wallet from the site** (especially Base Sepolia testnet), and when reconnecting, ensure they only connect with Base Mainnet
+   - **Ensure they're using a supported wallet**: Rainbow, Coinbase Wallet, MetaMask, WalletConnect, Argent, Trust Wallet, or Ledger
+
+3. Adapt your response based on their specific issue, but include relevant troubleshooting steps from the list above when appropriate.
+
+Example response structure:
+"Hi [user], thanks for reaching out! Can you please share more details about the issue you're experiencing? Screenshots would be really helpful.
+
+Here are some tips that have solved most of the issues we commonly see:
+- Clear all site data and refresh the page
+- Disconnect all networks in your wallet from the site (especially Base Sepolia), and when reconnecting, make sure you only connect with Base Mainnet
+- Ensure you're using one of these supported wallets: Rainbow, Coinbase Wallet, MetaMask, WalletConnect, Argent, Trust Wallet, or Ledger
+
+Let me know if any of these help or if you're still having trouble!"`
+                : `# Support Ticket Guidelines
+If users are experiencing technical issues or need help with any of the following:
+- Claiming airdrop tokens
+- Staking tokens or staking issues
+- Website functionality problems
+- Account-related issues
+- Transaction or wallet connection problems
+- Any other technical support needs
+
+Direct them to file a support ticket in the support channel: https://discord.com/channels/1321243373226561600/1321556555753193592
+
+You can respond with something like: "That sounds like something our support team can help you with directly. Please file a support ticket here: https://discord.com/channels/1321243373226561600/1321556555753193592 and the team will assist you as soon as possible."`;
+
             let state = await this.runtime.composeState(userMessage, {
                 discordClient: this.client,
                 discordMessage: message,
                 agentName:
                     this.runtime.character.name ||
                     this.client.user?.displayName,
+                supportTicketGuidelines: supportTicketGuidelines,
             });
 
             const canSendResult = canSendMessage(message.channel);
