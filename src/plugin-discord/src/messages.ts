@@ -445,15 +445,16 @@ You can respond with something like: "That sounds like something our support tea
             if (
                 agentUserState === "MUTED" &&
                 !message.mentions.has(this.client.user.id) &&
-                !hasInterest
+                !hasInterest &&
+                !isTicketChannel
             ) {
                 console.log("Ignoring muted room");
-                // Ignore muted rooms unless explicitly mentioned
+                // Ignore muted rooms unless explicitly mentioned (ticket channels are exempt)
                 return;
             }
 
-            if (agentUserState === "FOLLOWED") {
-                shouldRespond = true; // Always respond in followed rooms
+            if (agentUserState === "FOLLOWED" || isTicketChannel) {
+                shouldRespond = true; // Always respond in followed rooms and ticket channels
             } else if (
                 (!shouldRespond && hasInterest) ||
                 (shouldRespond && !hasInterest)
