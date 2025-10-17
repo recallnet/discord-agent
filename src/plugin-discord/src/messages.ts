@@ -409,6 +409,10 @@ export class MessageManager {
                 ? `# Current Context
 You are currently in a support ticket channel (${channelName}). The user has already created a ticket, so provide direct assistance rather than directing them to create another ticket.
 
+**User Mention Format:**
+If you choose to mention the user, the current user is {{currentUserName}} (ID: {{currentUserId}}).
+Use <@{{currentUserId}}> for proper mentions (not @{{currentUserName}}).
+
 # Troubleshooting Support for Common Issues
 When helping users with technical issues (especially claiming airdrops, staking tokens, wallet connections, or site functionality):
 
@@ -439,7 +443,7 @@ Include in your response: "<@779036923931000892> <@384516597475180545> - this ti
 - Use your judgment - if the user seems satisfied with your guidance, don't escalate
 
 Example response structure for initial help:
-"Hi [user], thanks for reaching out! Can you please share more details about the issue you're experiencing? Screenshots would be really helpful.
+"Hi there, thanks for reaching out! Can you please share more details about the issue you're experiencing? Screenshots would be really helpful.
 
 Here are some tips that have solved most of the issues we commonly see:
 - Make sure you have at least 50 cents worth of ETH on Base Mainnet for gas fees
@@ -476,6 +480,8 @@ Result: [STOP]`
                     this.client.user?.displayName,
                 supportTicketGuidelines: supportTicketGuidelines,
                 coreTeamHandoffContext: coreTeamHandoffContext,
+                currentUserId: userId,
+                currentUserName: userName,
             });
 
             const canSendResult = canSendMessage(message.channel);
