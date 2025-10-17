@@ -146,11 +146,12 @@ export class MessageManager {
 
         // In ticket channels, check if a core team member has already responded
         // Core team members are identified by having "Core Team" in their server nickname
-        if (isTicketChannel && !isDirectlyMentioned && 'messages' in message.channel) {
+        let coreTeamHasResponded = false;
+        if (isTicketChannel && 'messages' in message.channel) {
             try {
                 // Fetch recent messages to see if core team has responded
                 const recentMessages = await (message.channel as TextChannel).messages.fetch({ limit: 20 });
-                const coreTeamHasResponded = recentMessages.some(msg => {
+                coreTeamHasResponded = recentMessages.some(msg => {
                     if (msg.author.bot) return false; // Ignore bot messages
                     
                     // Check server nickname (this is where "Core Team" appears in Discord)
@@ -165,7 +166,7 @@ export class MessageManager {
                            globalName.includes('core team');
                 });
                 
-                if (coreTeamHasResponded) {
+                if (coreTeamHasResponded && !isDirectlyMentioned) {
                     console.log(`Core team member has responded in ticket ${channelName}, bot backing off`);
                     return; // Don't respond if core team has taken over, unless directly mentioned
                 }
@@ -460,6 +461,13 @@ Direct them to file a support ticket in the support channel: https://discord.com
 
 You can respond with something like: "That sounds like something our support team can help you with directly. Please file a support ticket here: https://discord.com/channels/1321243373226561600/1321556555753193592 and the team will assist you as soon as possible."`;
 
+            // Set context for shouldRespond template about core team handoff
+            const coreTeamHandoffContext = coreTeamHasResponded
+                ? `# CRITICAL CONTEXT - Core Team Has Taken Over
+A member of the Core Team has already responded in this support ticket. You should STOP responding to let them handle it, unless you are directly mentioned by name.
+Result: [STOP]`
+                : '';
+
             let state = await this.runtime.composeState(userMessage, {
                 discordClient: this.client,
                 discordMessage: message,
@@ -467,6 +475,7 @@ You can respond with something like: "That sounds like something our support tea
                     this.runtime.character.name ||
                     this.client.user?.displayName,
                 supportTicketGuidelines: supportTicketGuidelines,
+                coreTeamHandoffContext: coreTeamHandoffContext,
             });
 
             const canSendResult = canSendMessage(message.channel);
