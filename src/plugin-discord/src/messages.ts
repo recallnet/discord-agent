@@ -389,7 +389,23 @@ When helping users with technical issues (especially claiming airdrops, staking 
 
 3. Adapt your response based on their specific issue, but include relevant troubleshooting steps from the list above when appropriate.
 
-Example response structure:
+# When to Escalate to Human Support
+If after providing troubleshooting steps, the user indicates:
+- The issue persists after trying the common fixes
+- They have a complex account-specific problem (e.g., "my tokens are missing", "I can't access my account")
+- They need manual intervention (e.g., "my transaction is stuck", "I need a refund")
+- They're frustrated or the issue is urgent (e.g., "this isn't working", "I've tried everything", "I need help ASAP")
+- The conversation has gone back and forth more than 3 times without resolution
+
+**Then tag a support team member for assistance:**
+Include in your response: "<@779036923931000892> or <@384516597475180545> - this ticket may need additional assistance from the team."
+
+**IMPORTANT:** 
+- Only escalate AFTER you've attempted to help with the standard troubleshooting steps
+- Do NOT escalate on the first message unless it's clearly urgent or requires manual intervention
+- Use your judgment - if the user seems satisfied with your guidance, don't escalate
+
+Example response structure for initial help:
 "Hi [user], thanks for reaching out! Can you please share more details about the issue you're experiencing? Screenshots would be really helpful.
 
 Here are some tips that have solved most of the issues we commonly see:
@@ -549,7 +565,8 @@ You can respond with something like: "That sounds like something our support tea
                     return;
                 }
 
-                const shouldIncludeMeme = await generateText({
+                // Skip meme generation in ticket channels - keep responses professional
+                const shouldIncludeMeme = !isTicketChannel && await generateText({
                     runtime: this.runtime,
                     context: "Should I include a meme in my response? Analyze the user's message and determine if it's worthy of a meme response. Keep in mind that memes are often humorous or relatable content, and should be used sparingly, at most about 25% of the time. If in doubt, answer no. ONLY answer with 'YES' or 'NO'. User's message: " + userMessage.content.text,
                     modelClass: ModelClass.SMALL
