@@ -144,6 +144,37 @@ export class MessageManager {
         const isDirectlyMentioned = this._isMessageForMe(message);
         const hasInterest = this._checkInterest(message.channelId);
 
+        // In ticket channels, check if a core team member has already responded
+        // Core team members are identified by having "Core Team" in their server nickname
+        if (isTicketChannel && !isDirectlyMentioned && 'messages' in message.channel) {
+            try {
+                // Fetch recent messages to see if core team has responded
+                const recentMessages = await (message.channel as TextChannel).messages.fetch({ limit: 20 });
+                const coreTeamHasResponded = recentMessages.some(msg => {
+                    if (msg.author.bot) return false; // Ignore bot messages
+                    
+                    // Check server nickname (this is where "Core Team" appears in Discord)
+                    const nickname = msg.member?.nickname?.toLowerCase() || '';
+                    
+                    // Also check username and global name as fallback
+                    const username = msg.author.username?.toLowerCase() || '';
+                    const globalName = msg.author.globalName?.toLowerCase() || '';
+                    
+                    return nickname.includes('core team') || 
+                           username.includes('core team') || 
+                           globalName.includes('core team');
+                });
+                
+                if (coreTeamHasResponded) {
+                    console.log(`Core team member has responded in ticket ${channelName}, bot backing off`);
+                    return; // Don't respond if core team has taken over, unless directly mentioned
+                }
+            } catch (error) {
+                console.error("Error checking for core team responses:", error);
+                // Continue if there's an error checking messages
+            }
+        }
+
         // Team handling
         if (
             this.runtime.character.clientConfig?.discord?.isPartOfTeam &&
@@ -398,8 +429,8 @@ If after providing troubleshooting steps, the user indicates:
 - They're frustrated or the issue is urgent (e.g., "this isn't working", "I've tried everything", "I need help ASAP")
 - The conversation has gone back and forth more than 3 times without resolution
 
-**Then tag a support team member for assistance:**
-Include in your response: "<@779036923931000892> or <@384516597475180545> - this ticket may need additional assistance from the team."
+**Then tag support team members for assistance:**
+Include in your response: "<@779036923931000892> <@384516597475180545> - this ticket may need additional assistance from the team."
 
 **IMPORTANT:** 
 - Only escalate AFTER you've attempted to help with the standard troubleshooting steps
