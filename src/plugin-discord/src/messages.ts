@@ -517,11 +517,12 @@ Result: [STOP]`
                 return;
             }
 
-            if (agentUserState === "FOLLOWED" || isTicketChannel) {
-                shouldRespond = true; // Always respond in followed rooms and ticket channels
+            if (agentUserState === "FOLLOWED") {
+                shouldRespond = true; // Always respond in followed rooms
             } else if (
                 (!shouldRespond && hasInterest) ||
-                (shouldRespond && !hasInterest)
+                (shouldRespond && !hasInterest) ||
+                isTicketChannel
             ) {
                 shouldRespond = await this._shouldRespond(message, state);
             }
