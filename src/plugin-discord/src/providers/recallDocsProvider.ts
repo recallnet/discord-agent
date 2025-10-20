@@ -34,7 +34,7 @@ interface VideoData {
 }
 
 export class WebDocScraper {
-  private baseUrl: string;
+  private baseUrls: string[];
   private documents: Document[] = [];
   private videosDocuments: Document[] = [];
   private scrapedUrls = new Set<string>();
@@ -48,11 +48,14 @@ export class WebDocScraper {
   private cacheTTL: number = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
   private initPromise: Promise<void> | null = null;
 
-  constructor(baseUrl: string, maxPages: number = 50) {
-    this.baseUrl = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+  constructor(baseUrls: string | string[], maxPages: number = 50) {
+    // Support both single URL (backward compatible) and array of URLs
+    this.baseUrls = (Array.isArray(baseUrls) ? baseUrls : [baseUrls])
+      .map(url => url.endsWith('/') ? url : url + '/');
     this.maxPages = maxPages;
-    const safeUrl = this.baseUrl.replace(/[^a-zA-Z0-9]/g, '_');
-    this.cacheFilePath = path.join(this.cacheDir, `${safeUrl}_cache.json`);
+    // Create a combined cache filename from all URLs
+    const combinedUrlKey = this.baseUrls.join('_').replace(/[^a-zA-Z0-9]/g, '_');
+    this.cacheFilePath = path.join(this.cacheDir, `${combinedUrlKey}_cache.json`);
     
     // Create cache directory if it doesn't exist
     if (!fs.existsSync(this.cacheDir)) {
@@ -200,10 +203,13 @@ export class WebDocScraper {
     if (this.isScraping) return;
     
     this.isScraping = true;
-    console.log(`Starting to scrape ${this.baseUrl}`);
+    console.log(`Starting to scrape ${this.baseUrls.length} site(s): ${this.baseUrls.join(', ')}`);
     
     try {
-      await this.scrapeUrl(this.baseUrl);
+      // Scrape all base URLs
+      for (const baseUrl of this.baseUrls) {
+        await this.scrapeUrl(baseUrl);
+      }
       this.isScraped = true;
       console.log(`Completed scraping. Indexed ${this.documents.length} pages.`);
     } catch (error) {
@@ -214,11 +220,14 @@ export class WebDocScraper {
   }
 
   private async scrapeUrl(url: string, depth: number = 0): Promise<void> {
+    // Check if URL belongs to any of our base URLs
+    const belongsToBaseUrl = this.baseUrls.some(baseUrl => url.startsWith(baseUrl));
+    
     if (
       this.scrapedUrls.has(url) || 
       this.documents.length >= this.maxPages ||
       depth > 3 || // Limit recursion depth
-      !url.startsWith(this.baseUrl) // Only scrape URLs within the base domain
+      !belongsToBaseUrl // Only scrape URLs within our base domains
     ) {
       return;
     }
@@ -259,12 +268,17 @@ export class WebDocScraper {
       });
 
       // Find and follow links
+      // Determine which base URL this page belongs to
+      const currentBaseUrl = this.baseUrls.find(base => url.startsWith(base)) || this.baseUrls[0];
+      
       const links = $('a[href]')
         .map((_, link) => {
           const href = $(link).attr('href') || '';
           if (href.startsWith('/')) {
-            return new URL(href, this.baseUrl).href;
-          } else if (href.startsWith(this.baseUrl)) {
+            // Relative link - resolve against current base URL
+            return new URL(href, currentBaseUrl).href;
+          } else if (this.baseUrls.some(base => href.startsWith(base))) {
+            // Absolute link within our domains
             return href;
           }
           return null;
@@ -291,8 +305,16 @@ export class WebDocScraper {
   }
 
   private urlToId(url: string): string {
-    return url
-      .replace(this.baseUrl, '')
+    // Remove any matching base URL from the start
+    let cleanedUrl = url;
+    for (const baseUrl of this.baseUrls) {
+      if (url.startsWith(baseUrl)) {
+        cleanedUrl = url.replace(baseUrl, '');
+        break;
+      }
+    }
+    
+    return cleanedUrl
       .replace(/\/$/, '')
       .replace(/[^a-zA-Z0-9]/g, '-')
       .toLowerCase() || 'home';
@@ -379,8 +401,11 @@ export class WebDocScraper {
   }
 }
 
-// Create a singleton instance of the scraper
-const recallDocsScraper = new WebDocScraper('https://docs.recall.network/', 50);
+// Create a singleton instance of the scraper for both docs and blog
+const recallDocsScraper = new WebDocScraper([
+  'https://docs.recall.network/',
+  'https://blog.recall.network/'
+], 100); // Increased to 100 pages to accommodate both sources
 
 export const recallDocsProvider: Provider = {
   get: async (
