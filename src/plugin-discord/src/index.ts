@@ -40,11 +40,8 @@ export class DiscordClient extends EventEmitter {
 
   constructor(runtime: IAgentRuntime) {
     super();
-    if (!process.env.DISCORD_CHANNEL_ID) {
-      throw new Error("DISCORD_CHANNEL_ID is required");
-    }
     this.targetGuildId = process.env.DISCORD_GUILD_ID;
-    this.channelId = process.env.DISCORD_CHANNEL_ID;
+    this.channelId = process.env.DISCORD_CHANNEL_ID || "";
     this.apiToken = runtime.getSetting("DISCORD_TOKEN") as string;
     this.client = new Client({
       intents: [
@@ -307,19 +304,28 @@ export class DiscordClient extends EventEmitter {
       // Verify guild access
       const guild = await this.client.guilds.fetch(this.targetGuildId);
       if (!guild) {
-        throw new Error('Could not access the specified guild');
+        elizaLogger.error('Could not access the specified guild');
+        return;
+      }
+
+      // If no channel ID configured, run in ticket-only mode
+      if (!this.channelId) {
+        elizaLogger.warn(`No DISCORD_CHANNEL_ID configured — running in ticket-only mode in guild: ${guild.name}`);
+        return;
       }
 
       // Verify channel access
       const channel = await guild.channels.fetch(this.channelId);
       if (!channel) {
-        throw new Error('Could not access the specified channel');
+        elizaLogger.warn(`Could not access channel ${this.channelId} — running in ticket-only mode in guild: ${guild.name}`);
+        this.channelId = "";
+        return;
       }
 
       console.log(`Successfully connected to channel: ${channel.name} in guild: ${guild.name}`);
     } catch (error) {
-      console.error('Failed to verify channel access:', error);
-      process.exit(1);
+      elizaLogger.warn(`Failed to verify channel access (running in ticket-only mode): ${error}`);
+      this.channelId = "";
     }
   }
 
